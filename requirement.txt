@@ -4,11 +4,3 @@ requests
 certifi
 webdriver-manager
 lxml
-
-tweepy
-openai
-schedule
-requests
-pytrends
-python-dotenv
-
