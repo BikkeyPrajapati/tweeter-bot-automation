@@ -15,6 +15,8 @@ import re
 import logging
 import random
 import xml.etree.ElementTree as ET
+import certifi
+import json
 
 # -------- Settings --------
 COOKIES_FILE = "twitter_cookies.pkl"
@@ -41,6 +43,44 @@ TOI_RSS_FEED = "http://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms"
 
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR,
                     format='%(asctime)s %(levelname)s:%(message)s')
+
+def setup_cookies():
+    """Load cookies from GitHub Secret or local file"""
+    if os.getenv('GITHUB_ACTIONS'):
+        # Running in GitHub Actions - use secret
+        print("[*] Running in GitHub Actions - loading cookies from secrets")
+        cookie_data = os.getenv('TWITTER_COOKIES')
+        if cookie_data:
+            try:
+                print(f"[*] Cookie data length: {len(cookie_data)}")
+                cookies = json.loads(cookie_data)
+                print(f"[*] Successfully parsed {len(cookies)} cookies")
+                # Create temporary cookie file for the script
+                with open('temp_cookies.pkl', 'wb') as f:
+                    pickle.dump(cookies, f)
+                print("[*] Temporary cookie file created successfully")
+                return 'temp_cookies.pkl'
+            except json.JSONDecodeError as e:
+                print(f"[!] JSON parsing error: {e}")
+                return None
+            except Exception as e:
+                print(f"[!] Cookie processing error: {e}")
+                return None
+        else:
+            print("[!] No TWITTER_COOKIES environment variable found")
+            return None
+    else:
+        # Running locally - use your original file
+        print("[*] Running locally - using local cookie file")
+        return 'twitter_cookies.pkl'
+
+def fetch_with_certifi(url, timeout=10):
+    """Fetch URL using certifi certificate bundle"""
+    try:
+        response = requests.get(url, verify=certifi.where(), timeout=timeout)
+        return response
+    except requests.exceptions.RequestException as e:
+        raise e
 
 def remove_non_bmp(text):
     return re.sub(r'[\U00010000-\U0010FFFF]', '', text)
@@ -93,27 +133,32 @@ def fetch_random_news():
             "desc_selector": None
         }
     ]
+    
     for source in random.sample(sources, len(sources)):
         try:
             headlines = []
             if source["name"] == "BBC":
-                res = requests.get(source["url"], timeout=10)
+                res = fetch_with_certifi(source["url"])
                 soup = BeautifulSoup(res.text, "html.parser")
                 for h in soup.select(source["headline_selector"]):
                     headline = remove_non_bmp(h.text.strip())
-                    if not headline: continue
+                    if not headline: 
+                        continue
                     next_p = h.find_next("p")
                     summary = remove_non_bmp(next_p.text.strip()) if next_p else ""
                     headlines.append((headline, summary))
+                    
             elif source["name"] == "CNN":
-                res = requests.get(source["url"], timeout=10)
+                res = fetch_with_certifi(source["url"])
                 soup = BeautifulSoup(res.text, "html.parser")
                 for h in soup.select(source["headline_selector"]):
                     headline = remove_non_bmp(h.text.strip())
-                    if not headline: continue
+                    if not headline: 
+                        continue
                     headlines.append((headline, ""))
+                    
             elif source["name"] == "TOI":
-                res = requests.get(source["url"], timeout=10)
+                res = fetch_with_certifi(source["url"])
                 root = ET.fromstring(res.content)
                 for item in root.findall(".//item"):
                     headline = remove_non_bmp(item.findtext("title", default="").strip())
@@ -124,13 +169,13 @@ def fetch_random_news():
             else:
                 continue
             
-            
-            # Inside fetch_random_news()
+            # Filter out already tweeted news and compose tweet
             tweeted = get_tweeted_news()
             random.shuffle(headlines)
             for headline, summary in headlines:
                 if not headline or headline in tweeted:
                     continue
+                    
                 hashtag_list = HASHTAGS.get(source["name"], ["#News"])
                 selected_tags = random.sample(hashtag_list, k=2) if len(hashtag_list) >= 2 else hashtag_list
                 hashtag = " ".join(selected_tags)
@@ -143,12 +188,14 @@ def fetch_random_news():
                         tweet += f" - {summary_part}"
                 tweet += f" {hashtag}"
                 tweet = tweet.strip()
+                
                 if MIN_TWEET_LENGTH <= len(tweet) <= MAX_TWEET_LENGTH:
                     return tweet, headline, source["name"]
-
+                    
         except Exception as e:
             logging.error(f"Failed to fetch news from {source['name']}: {e}")
             print(f"⚠️ Failed to fetch news from {source['name']}: {e}")
+    
     print("[!] No new news found to tweet.")
     return None, None, None
 
@@ -215,6 +262,14 @@ def tweet(text, driver, wait):
         return False
 
 def main():
+    print("[*] Starting Twitter Bot...")
+    
+    # Get the appropriate cookie file
+    cookie_file = setup_cookies()
+    if not cookie_file:
+        print("[!] No cookie file available")
+        return
+    
     tweet_text, headline, src = fetch_random_news()
     if not tweet_text:
         print("[X] No tweet to post.")
@@ -225,13 +280,17 @@ def main():
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument("--headless=new")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     driver.get("https://x.com")
 
-    if os.path.exists(COOKIES_FILE):
+    if os.path.exists(cookie_file):
         print("[*] Loading cookies...")
-        with open(COOKIES_FILE, "rb") as f:
+        with open(cookie_file, "rb") as f:
             cookies = pickle.load(f)
             for cookie in cookies:
                 if "expiry" in cookie:
@@ -241,7 +300,7 @@ def main():
         print("[+] Cookies loaded and refreshed!")
         time.sleep(5)
     else:
-        print("[!] Cookie file not found. Login manually, save cookies, and rerun.")
+        print(f"[!] Cookie file {cookie_file} not found. Login manually, save cookies, and rerun.")
         driver.quit()
         return
 
