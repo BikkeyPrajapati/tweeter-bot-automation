@@ -36,6 +36,18 @@ HASHTAGS = {
     ],
     "NDTV": [
         "#NDTV", "#NDTVNews", "#IndiaNews", "#Breaking", "#NewsUpdate", "#IndianNews", "#LatestNews"
+    ],
+     "TheHindu": [
+        "#TheHindu", "#IndiaNews", "#QualityJournalism", "#Breaking", "#Analysis", "#HinduNews", "#Credible"
+    ],
+    "IndianExpress": [
+        "#IndianExpress", "#IndiaNews", "#Breaking", "#ExpressNews", "#Journalism", "#Politics", "#Analysis"
+    ],
+    "HindustanTimes": [
+        "#HindustanTimes", "#HTNews", "#IndiaNews", "#Breaking", "#News", "#Politics", "#Updates"
+    ],
+    "IndiaToday": [
+        "#IndiaToday", "#Breaking", "#IndiaNews", "#Analysis", "#Politics", "#CurrentAffairs", "#News"
     ]
 }
 
@@ -43,6 +55,10 @@ TWEET_HISTORY_FILE = "tweeted_news.txt"
 MAX_HISTORY = 100
 TOI_RSS_FEED = "http://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms"
 NDTV_RSS_FEED = "https://feeds.feedburner.com/ndtvnews-latest"
+THEHINDU_RSS_FEED = "https://www.thehindu.com/feeder/default.rss"
+INDIANEXPRESS_RSS_FEED = "https://indianexpress.com/section/india/feed/"
+HINDUSTANTIMES_RSS_FEED = "https://www.hindustantimes.com/feeds/rss/india-news/rssfeed.xml"
+INDIATODAY_RSS_FEED = "https://www.indiatoday.in/rss/1206578"
 # --------------------------
 
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR,
@@ -140,6 +156,30 @@ def fetch_random_news():
             "url": NDTV_RSS_FEED,
             "headline_selector": None,
             "desc_selector": None
+        },
+        {
+            "name": "TheHindu",
+            "url": THEHINDU_RSS_FEED,
+            "headline_selector": None,
+            "desc_selector": None
+        },
+         {
+            "name": "IndianExpress",
+            "url": INDIANEXPRESS_RSS_FEED,
+            "headline_selector": None,
+            "desc_selector": None
+        },
+         {
+            "name": "HindustanTimes",
+            "url": HINDUSTANTIMES_RSS_FEED,
+            "headline_selector": None,
+            "desc_selector": None
+        },
+        {
+            "name": "IndiaToday",
+            "url": INDIATODAY_RSS_FEED,
+            "headline_selector": None,
+            "desc_selector": None
         }
     ]
     
@@ -166,8 +206,8 @@ def fetch_random_news():
                         continue
                     headlines.append((headline, ""))
                     
-            elif source["name"] == "TOI" or source["name"] == "NDTV":  # FIXED - handle both RSS feeds
-                res = fetch_with_certifi(source["url"], timeout=10)  # FIXED - use certifi
+            elif source["name"] == "TOI" or source["name"] == "NDTV" or source["name"] == "TheHindu" or source["name"] == "IndianExpress" or source["name"] == "HindustanTimes" or source["name"] == "IndiaToday" :  # UPDATED THIS LINE
+                res = fetch_with_certifi(source["url"], timeout=10)
                 root = ET.fromstring(res.content)
                 for item in root.findall(".//item"):
                     headline = remove_non_bmp(item.findtext("title", default="").strip())
@@ -175,6 +215,7 @@ def fetch_random_news():
                     clean_summary = BeautifulSoup(raw_summary, "html.parser").get_text()
                     summary = remove_non_bmp(clean_summary)
                     headlines.append((headline, summary))
+            
             else:
                 continue
             
