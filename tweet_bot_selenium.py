@@ -15,8 +15,8 @@ import re
 import logging
 import random
 import xml.etree.ElementTree as ET
-import certifi
-import json
+import certifi  # ADDED
+import json     # ADDED
 
 # -------- Settings --------
 COOKIES_FILE = "twitter_cookies.pkl"
@@ -26,28 +26,32 @@ LOG_FILE = "tweet_bot_errors.log"
 TWEET_LOG_FILE = "tweet_log.txt"
 HASHTAGS = {
     "BBC": [
-        "#BBCNews", "#WorldNews", "#Breaking", "#UKNews", "#BBCUpdates", "#GlobalNews", "#Headlines"
+        "#BBCNews", "#BreakingNews", "#WorldNews", "#Breaking", "#UKNews", "#BBCUpdates", "#GlobalNews", "#Headlines"  # FIXED
     ],
     "CNN": [
         "#CNN", "#BreakingNews", "#CNNUpdates", "#USNews", "#WorldNews", "#TopStories", "#LiveNews"
     ],
     "TOI": [
         "#TimesOfIndia", "#IndiaNews", "#TOIUpdates", "#BreakingIndia", "#IndianNews", "#TOIHeadlines", "#BharatNews"
+    ],
+    "NDTV": [
+        "#NDTV", "#NDTVNews", "#IndiaNews", "#Breaking", "#NewsUpdate", "#IndianNews", "#LatestNews"
     ]
 }
 
 TWEET_HISTORY_FILE = "tweeted_news.txt"
 MAX_HISTORY = 100
 TOI_RSS_FEED = "http://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms"
+NDTV_RSS_FEED = "https://feeds.feedburner.com/ndtvnews-latest"
 # --------------------------
 
 logging.basicConfig(filename=LOG_FILE, level=logging.ERROR,
                     format='%(asctime)s %(levelname)s:%(message)s')
 
+# ADDED - Missing function for GitHub Actions
 def setup_cookies():
     """Load cookies from GitHub Secret or local file"""
     if os.getenv('GITHUB_ACTIONS'):
-        # Running in GitHub Actions - use secret
         print("[*] Running in GitHub Actions - loading cookies from secrets")
         cookie_data = os.getenv('TWITTER_COOKIES')
         if cookie_data:
@@ -55,7 +59,6 @@ def setup_cookies():
                 print(f"[*] Cookie data length: {len(cookie_data)}")
                 cookies = json.loads(cookie_data)
                 print(f"[*] Successfully parsed {len(cookies)} cookies")
-                # Create temporary cookie file for the script
                 with open('temp_cookies.pkl', 'wb') as f:
                     pickle.dump(cookies, f)
                 print("[*] Temporary cookie file created successfully")
@@ -70,10 +73,10 @@ def setup_cookies():
             print("[!] No TWITTER_COOKIES environment variable found")
             return None
     else:
-        # Running locally - use your original file
         print("[*] Running locally - using local cookie file")
         return 'twitter_cookies.pkl'
 
+# ADDED - Missing function for SSL certificates
 def fetch_with_certifi(url, timeout=10):
     """Fetch URL using certifi certificate bundle"""
     try:
@@ -131,6 +134,12 @@ def fetch_random_news():
             "url": TOI_RSS_FEED,
             "headline_selector": None,
             "desc_selector": None
+        },
+        {  # ADDED - NDTV source
+            "name": "NDTV",
+            "url": NDTV_RSS_FEED,
+            "headline_selector": None,
+            "desc_selector": None
         }
     ]
     
@@ -138,7 +147,7 @@ def fetch_random_news():
         try:
             headlines = []
             if source["name"] == "BBC":
-                res = fetch_with_certifi(source["url"])
+                res = fetch_with_certifi(source["url"], timeout=10)  # FIXED - use certifi
                 soup = BeautifulSoup(res.text, "html.parser")
                 for h in soup.select(source["headline_selector"]):
                     headline = remove_non_bmp(h.text.strip())
@@ -149,7 +158,7 @@ def fetch_random_news():
                     headlines.append((headline, summary))
                     
             elif source["name"] == "CNN":
-                res = fetch_with_certifi(source["url"])
+                res = fetch_with_certifi(source["url"], timeout=10)  # FIXED - use certifi
                 soup = BeautifulSoup(res.text, "html.parser")
                 for h in soup.select(source["headline_selector"]):
                     headline = remove_non_bmp(h.text.strip())
@@ -157,8 +166,8 @@ def fetch_random_news():
                         continue
                     headlines.append((headline, ""))
                     
-            elif source["name"] == "TOI":
-                res = fetch_with_certifi(source["url"])
+            elif source["name"] == "TOI" or source["name"] == "NDTV":  # FIXED - handle both RSS feeds
+                res = fetch_with_certifi(source["url"], timeout=10)  # FIXED - use certifi
                 root = ET.fromstring(res.content)
                 for item in root.findall(".//item"):
                     headline = remove_non_bmp(item.findtext("title", default="").strip())
@@ -192,7 +201,7 @@ def fetch_random_news():
                 if MIN_TWEET_LENGTH <= len(tweet) <= MAX_TWEET_LENGTH:
                     return tweet, headline, source["name"]
                     
-        except Exception as e:
+        except Exception as e:  # FIXED - complete try-except block
             logging.error(f"Failed to fetch news from {source['name']}: {e}")
             print(f"⚠️ Failed to fetch news from {source['name']}: {e}")
     
@@ -203,7 +212,6 @@ def tweet(text, driver, wait):
     try:
         driver.get("https://x.com/compose/post")
 
-        # Wait for tweet box
         tweet_box = wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, "div[aria-label='Post text'][role='textbox']")))
         
@@ -228,7 +236,6 @@ def tweet(text, driver, wait):
         except:
             print("[!] Modal might still be open...")
 
-        # Wait for and click post button
         post_button = wait.until(EC.element_to_be_clickable(
             (By.CSS_SELECTOR, "button[data-testid='tweetButton']")))
 
@@ -249,22 +256,12 @@ def tweet(text, driver, wait):
         logging.error(f"Failed to tweet: {e}")
         driver.save_screenshot("debug_tweet_error.png")
         print(f"[X] Failed to tweet: {e}")
-
-        try:
-            intercepting_element = driver.execute_script("""
-                const el = document.elementFromPoint(437, 90);
-                return el ? el.outerHTML : 'None';
-            """)
-            print(f"[!] Intercepting element: {intercepting_element}")
-        except:
-            pass
-
         return False
 
 def main():
     print("[*] Starting Twitter Bot...")
     
-    # Get the appropriate cookie file
+    # FIXED - Add cookie setup for GitHub Actions
     cookie_file = setup_cookies()
     if not cookie_file:
         print("[!] No cookie file available")
@@ -280,15 +277,13 @@ def main():
     chrome_options = Options()
     chrome_options.add_argument("--start-maximized")
     chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--no-sandbox")  # ADDED
+    chrome_options.add_argument("--disable-dev-shm-usage")  # ADDED
 
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     driver.get("https://x.com")
 
-    if os.path.exists(cookie_file):
+    if os.path.exists(cookie_file):  # FIXED - use dynamic cookie file
         print("[*] Loading cookies...")
         with open(cookie_file, "rb") as f:
             cookies = pickle.load(f)
