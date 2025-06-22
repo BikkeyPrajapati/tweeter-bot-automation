@@ -206,7 +206,7 @@ def fetch_random_news():
                         continue
                     headlines.append((headline, ""))
                     
-            elif source["name"] == "TOI" or source["name"] == "NDTV" or source["name"] == "TheHindu" or source["name"] == "IndianExpress" or source["name"] == "HindustanTimes" or source["name"] == "IndiaToday" :  # UPDATED THIS LINE
+            elif source["name"] == "TOI" or source["name"] == "NDTV" or source["name"] == "TheHindu" or source["name"] == "IndianExpress" or source["name"] == "HindustanTimes" or source["name"] == "IndiaToday":
                 res = fetch_with_certifi(source["url"], timeout=10)
                 root = ET.fromstring(res.content)
                 for item in root.findall(".//item"):
@@ -214,7 +214,13 @@ def fetch_random_news():
                     raw_summary = item.findtext("description", default="").strip()
                     clean_summary = BeautifulSoup(raw_summary, "html.parser").get_text()
                     summary = remove_non_bmp(clean_summary)
+                    
+                    # Skip summary if it's the same as headline
+                    if summary.lower().strip() == headline.lower().strip():
+                        summary = ""
+                        
                     headlines.append((headline, summary))
+
             
             else:
                 continue
