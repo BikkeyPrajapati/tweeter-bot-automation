@@ -26,30 +26,31 @@ LOG_FILE = "tweet_bot_errors.log"
 TWEET_LOG_FILE = "tweet_log.txt"
 HASHTAGS = {
     "BBC": [
-        "#BBCNews", "#BreakingNews", "#WorldNews", "#Breaking", "#UKNews", "#BBCUpdates", "#GlobalNews", "#Headlines"  # FIXED
+        "#BBCNews", "#BreakingNews", "#WorldNews", "#Breaking", "#UKNews", "#BBCUpdates", "#GlobalNews", "#Headlines", "#BBCEarth", "#BBCTravel", "#TrendingNow", "#NewsAlert", "#BBCBritain", "#LiveNews", "#NewsOfTheDay"
     ],
     "CNN": [
-        "#CNN", "#BreakingNews", "#CNNUpdates", "#USNews", "#WorldNews", "#TopStories", "#LiveNews"
+        "#CNN", "#BreakingNews", "#CNNUpdates", "#USNews", "#WorldNews", "#TopStories", "#LiveNews", "#CNNNews", "#Politics", "#TrendingNews", "#NewsUpdate", "#Election2024", "#Democracy", "#Headlines", "#ViralNews"
     ],
     "TOI": [
-        "#TimesOfIndia", "#IndiaNews", "#TOIUpdates", "#BreakingIndia", "#IndianNews", "#TOIHeadlines", "#BharatNews"
+        "#TimesOfIndia", "#IndiaNews", "#TOIUpdates", "#BreakingIndia", "#IndianNews", "#TOIHeadlines", "#BharatNews", "#TOI", "#Mumbai", "#Bollywood", "#IndiaToday", "#TrendingIndia", "#DesiNews", "#IndianPolitics", "#NewsIndia"
     ],
     "NDTV": [
-        "#NDTV", "#NDTVNews", "#IndiaNews", "#Breaking", "#NewsUpdate", "#IndianNews", "#LatestNews"
+        "#NDTV", "#NDTVNews", "#IndiaNews", "#Breaking", "#NewsUpdate", "#IndianNews", "#LatestNews", "#RavishKumar", "#Delhi", "#Modi", "#BJP", "#Politics", "#IndianPolitics", "#TrendingIndia", "#NewsAlert"
     ],
-     "TheHindu": [
-        "#TheHindu", "#IndiaNews", "#QualityJournalism", "#Breaking", "#Analysis", "#HinduNews", "#Credible"
+    "TheHindu": [
+        "#TheHindu", "#IndiaNews", "#QualityJournalism", "#Breaking", "#Analysis", "#HinduNews", "#Credible", "#Chennai", "#SouthIndia", "#IndianExpress", "#Politics", "#NewsAnalysis", "#Editorial", "#OpEd", "#InDepthNews"
     ],
     "IndianExpress": [
-        "#IndianExpress", "#IndiaNews", "#Breaking", "#ExpressNews", "#Journalism", "#Politics", "#Analysis"
+        "#IndianExpress", "#IndiaNews", "#Breaking", "#ExpressNews", "#Journalism", "#Politics", "#Analysis", "#Delhi", "#Mumbai", "#IndianPolitics", "#NewsUpdate", "#Editorial", "#Investigation", "#CurrentAffairs", "#TrendingNews"
     ],
     "HindustanTimes": [
-        "#HindustanTimes", "#HTNews", "#IndiaNews", "#Breaking", "#News", "#Politics", "#Updates"
+        "#HindustanTimes", "#HTNews", "#IndiaNews", "#Breaking", "#News", "#Politics", "#Updates", "#Delhi", "#Mumbai", "#IndianNews", "#HTUpdates", "#Bollywood", "#Sports", "#Business", "#TrendingIndia"
     ],
     "IndiaToday": [
-        "#IndiaToday", "#Breaking", "#IndiaNews", "#Analysis", "#Politics", "#CurrentAffairs", "#News"
+        "#IndiaToday", "#Breaking", "#IndiaNews", "#Analysis", "#Politics", "#CurrentAffairs", "#News", "#AajTak", "#IndianNews", "#NewsUpdate", "#TrendingIndia", "#Investigation", "#Exclusive", "#LiveNews", "#Headlines"
     ]
 }
+
 
 TWEET_HISTORY_FILE = "tweeted_news.txt"
 MAX_HISTORY = 100
